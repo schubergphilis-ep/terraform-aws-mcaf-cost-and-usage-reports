@@ -151,7 +151,7 @@ data "aws_iam_policy_document" "allow_access_to_curreports" {
 }
 
 module "cur_reports_bucket" {
-  source  = "schubergphilis/mcaf-s3/aws"
+  source  = "schubergphilis-ep/mcaf-s3/aws"
   version = "~> 2.0.0"
 
   name        = local.cur_reports_bucket_name
