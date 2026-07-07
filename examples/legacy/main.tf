@@ -6,7 +6,7 @@ provider "aws" {
 }
 
 module "cur_kms" {
-  source  = "schubergphilis/mcaf-kms/aws"
+  source  = "schubergphilis-ep/mcaf-kms/aws"
   version = "~> 1.0.0"
 
   name = "cur"

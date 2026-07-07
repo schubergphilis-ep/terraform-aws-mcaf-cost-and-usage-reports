@@ -31,7 +31,7 @@ Terraform module to setup and manage AWS Cost and Usage reports.
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_cur_reports_bucket"></a> [cur\_reports\_bucket](#module\_cur\_reports\_bucket) | schubergphilis/mcaf-s3/aws | ~> 2.0.0 |
+| <a name="module_cur_reports_bucket"></a> [cur\_reports\_bucket](#module\_cur\_reports\_bucket) | schubergphilis-ep/mcaf-s3/aws | ~> 2.0.0 |
 
 ## Resources
 
