@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.2](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/compare/v1.0.1...v1.0.2) (2026-07-07)
+
+
+### 🐛 Fixes
+
+* migrate MCAF module sources ([#2](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/issues/2)) ([f0cc6ab](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/commit/f0cc6ab5bb2952ca2b2ea2e2590ca86be0fd9c33))
+
 ## [1.0.1](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/compare/v1.0.0...v1.0.1) (2026-02-03)
 
 
@@ -33,4 +40,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * create CUR module ([#1](https://github.com/schubergphilis/terraform-aws-mcaf-cost-and-usage-reports/pull/1)) ([6cbe3af](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/commit/6cbe3af1150d9ce79b7a3a6514e6f98889734ae7))
 
 ## 0.0.1 (2023-11-15)
-
