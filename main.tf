@@ -17,6 +17,24 @@ data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
 ################################################################################
+# KMS key for the S3 bucket to store Cost and Usage Reports
+################################################################################
+module "kms_key" {
+  count = var.kms_key_arn == null ? 1 : 0
+
+  source  = "schubergphilis-ep/mcaf-kms/aws"
+  version = "~> 3.0.0"
+
+  name        = var.kms_key_configuration.name
+  description = "KMS key used for encrypting s3 bucket to store Cost and Usage Reports"
+  tags        = var.tags
+
+  default_policy = {
+    iam_arns_administrator = var.kms_key_configuration.iam_arns_administrator
+  }
+}
+
+################################################################################
 # S3 bucket to store Cost and Usage Reports
 ################################################################################
 
@@ -155,7 +173,7 @@ module "cur_reports_bucket" {
   version = "~> 2.0.0"
 
   name        = local.cur_reports_bucket_name
-  kms_key_arn = var.kms_key_arn
+  kms_key_arn = var.kms_key_arn != null ? var.kms_key_arn : module.kms_key[0].arn
   policy      = data.aws_iam_policy_document.allow_access_to_curreports.json
   tags        = var.tags
 

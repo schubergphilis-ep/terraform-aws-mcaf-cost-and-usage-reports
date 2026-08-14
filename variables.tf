@@ -7,6 +7,26 @@ variable "bucket_name" {
 variable "kms_key_arn" {
   type        = string
   description = "The KMS key ARN used for the bucket encryption"
+  default     = null
+}
+
+variable "kms_key_configuration" {
+  type = object({
+    iam_arns_administrator = list(string)
+    name                   = optional(string, "cost-and-usage-reports")
+  })
+  default     = null
+  description = "Access configuration for the KMS key created by this module. Only applicable when 'kms_key_arn' is null. 'iam_arns_administrator' grants permissions to manage the key (no cryptographic use). 'name' sets the alias/name of the created key."
+
+  validation {
+    condition     = var.kms_key_arn == null || var.kms_key_configuration == null
+    error_message = "'kms_key_arn' and 'kms_key_configuration' are mutually exclusive; provide 'kms_key_arn' to use an existing key, or 'kms_key_configuration' to have the module create one, but not both."
+  }
+
+  validation {
+    condition     = var.kms_key_arn != null || try(length(var.kms_key_configuration.iam_arns_administrator) > 0, false)
+    error_message = "When 'kms_key_arn' is not provided, 'kms_key_configuration.iam_arns_administrator' must contain at least one IAM ARN to administer the KMS key created by this module."
+  }
 }
 
 variable "legacy_reporting" {
