@@ -131,7 +131,7 @@ data "aws_iam_policy_document" "allow_access_to_curreports" {
       condition {
         test     = "StringLike"
         variable = "aws:SourceArn"
-        values   = ["arn:aws:bcm-data-exports:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:export/*"]
+        values   = ["arn:aws:bcm-data-exports:us-east-1:${data.aws_caller_identity.current.account_id}:export/*"]
       }
     }
   }
@@ -162,7 +162,7 @@ data "aws_iam_policy_document" "allow_access_to_curreports" {
       condition {
         test     = "StringLike"
         variable = "aws:SourceArn"
-        values   = ["arn:aws:bcm-data-exports:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:export/*"]
+        values   = ["arn:aws:bcm-data-exports:us-east-1:${data.aws_caller_identity.current.account_id}:export/*"]
       }
     }
   }
@@ -244,6 +244,7 @@ resource "aws_bcmdataexports_export" "default" {
       table_configurations = {
         COST_AND_USAGE_REPORT = {
           INCLUDE_CAPACITY_RESERVATION_DATA     = each.value.include_capacity_reservation_data ? "TRUE" : "FALSE"
+          INCLUDE_IAM_PRINCIPAL_DATA            = each.value.include_iam_principal_data ? "TRUE" : "FALSE"
           INCLUDE_MANUAL_DISCOUNT_COMPATIBILITY = each.value.include_manual_discount_compatibility ? "TRUE" : "FALSE"
           INCLUDE_RESOURCES                     = each.value.include_resources ? "TRUE" : "FALSE"
           INCLUDE_SPLIT_COST_ALLOCATION_DATA    = each.value.include_split_cost_allocation_data ? "TRUE" : "FALSE"
