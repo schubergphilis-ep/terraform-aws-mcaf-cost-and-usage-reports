@@ -41,6 +41,7 @@ variable "report_definitions" {
     compression                           = string
     format                                = string
     include_capacity_reservation_data     = optional(bool, false)
+    include_iam_principal_data            = optional(bool, false) # Only used when legacy_reporting is `false`.
     include_manual_discount_compatibility = optional(bool, false)
     include_resources                     = optional(bool, true)
     include_split_cost_allocation_data    = optional(bool, false)
