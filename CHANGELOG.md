@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/compare/v1.1.0...v1.2.0) (2026-10-15)
+
+
+### 🚀 Features
+
+* add include_iam_principal_data option to CUR 2.0 exports ([#6](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/issues/6)) ([04ed1aa](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/commit/04ed1aafd084bb57601b3ad037425726096f1d3b))
+
 ## [1.1.0](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/compare/v1.0.2...v1.1.0) (2026-08-14)
 
 
