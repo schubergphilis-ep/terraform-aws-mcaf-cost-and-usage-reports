@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.1](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/compare/v1.2.0...v1.2.1) (2026-10-15)
+
+
+### 🐛 Fixes
+
+* use explicit column list for CUR 2.0 exports ([#8](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/issues/8)) ([88f4d49](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/commit/88f4d496a5cfef524edb8d91b658e7a22ffa8652))
+
 ## [1.2.0](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/compare/v1.1.0...v1.2.0) (2026-10-15)
 
 
