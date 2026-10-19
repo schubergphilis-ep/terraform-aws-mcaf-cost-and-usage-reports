@@ -172,6 +172,8 @@ locals {
 
 data "aws_caller_identity" "current" {}
 
+data "aws_partition" "current" {}
+
 data "aws_region" "current" {}
 
 ################################################################################
@@ -401,6 +403,9 @@ resource "aws_bcmdataexports_export" "default" {
 
       table_configurations = {
         COST_AND_USAGE_REPORT = {
+          # Set explicitly because AWS adds it to the export, causing an inconsistent result after apply.
+          # https://github.com/hashicorp/terraform-provider-aws/issues/43978
+          BILLING_VIEW_ARN                      = "arn:${data.aws_partition.current.partition}:billing::${data.aws_caller_identity.current.account_id}:billingview/primary"
           INCLUDE_CAPACITY_RESERVATION_DATA     = each.value.include_capacity_reservation_data ? "TRUE" : "FALSE"
           INCLUDE_IAM_PRINCIPAL_DATA            = each.value.include_iam_principal_data ? "TRUE" : "FALSE"
           INCLUDE_MANUAL_DISCOUNT_COMPATIBILITY = each.value.include_manual_discount_compatibility ? "TRUE" : "FALSE"
