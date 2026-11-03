@@ -6,7 +6,7 @@ variable "bucket_name" {
 
 variable "kms_key_arn" {
   type        = string
-  description = "The KMS key ARN used for the bucket encryption"
+  description = "The KMS key ARN used for the bucket encryption. When set and a report uses 'replication', the key policy must allow the replication role (see the 'replication_role_arn' output) to use kms:Decrypt."
   default     = null
 }
 
@@ -46,7 +46,14 @@ variable "report_definitions" {
     include_resources                     = optional(bool, true)
     include_split_cost_allocation_data    = optional(bool, false)
     overwrite                             = optional(string, "CREATE_NEW_REPORT")
+    s3_prefix                             = optional(string, null)
     time_unit                             = string
+    replication = optional(object({
+      destination_account_id  = string
+      destination_bucket_arn  = string
+      destination_kms_key_arn = string
+      storage_class           = optional(string, null)
+    }), null)
     }
   ))
   default = {
@@ -66,7 +73,7 @@ variable "report_definitions" {
       time_unit            = "DAILY"
     }
   }
-  description = "AWS Cost and Usage reports definitions. Key is used as report/export name and as prefix in the s3 bucket to store the report/export files. Supports both legacy CUR (aws_cur_report_definition) and modern BCM Data Exports (aws_bcmdataexports_export)."
+  description = "AWS Cost and Usage reports definitions. Key is used as report/export name. Files are stored under `<s3_prefix>/<key>/` in the bucket, where 's3_prefix' defaults to the key. Set 'replication' to replicate the files under that prefix to a bucket in another account. Supports both legacy CUR (aws_cur_report_definition) and modern BCM Data Exports (aws_bcmdataexports_export)."
 
   validation {
     condition = alltrue([
@@ -102,6 +109,35 @@ variable "report_definitions" {
       v.compression == "PARQUET" ? v.format == "PARQUET" : true
     ])
     error_message = "When compression is PARQUET, format must also be PARQUET."
+  }
+
+  validation {
+    condition = alltrue([
+      for k, v in var.report_definitions :
+      v.s3_prefix == null ? true : can(regex("^[^/].*[^/]$|^[^/]$", v.s3_prefix))
+    ])
+    error_message = "s3_prefix must not be empty and must not start or end with a '/'."
+  }
+
+  validation {
+    condition = alltrue([
+      for k, v in var.report_definitions : v.replication == null ? true : alltrue([
+        can(regex("^[0-9]{12}$", v.replication.destination_account_id)),
+        startswith(v.replication.destination_bucket_arn, "arn:aws:s3:::"),
+        startswith(v.replication.destination_kms_key_arn, "arn:aws:kms:"),
+      ])
+    ])
+    error_message = "replication.destination_account_id must be a 12-digit AWS account ID, replication.destination_bucket_arn an S3 bucket ARN and replication.destination_kms_key_arn a KMS key ARN."
+  }
+
+  validation {
+    condition = alltrue([
+      for k, v in var.report_definitions : try(v.replication.storage_class, null) == null ? true : contains(
+        ["DEEP_ARCHIVE", "GLACIER", "GLACIER_IR", "INTELLIGENT_TIERING", "ONEZONE_IA", "REDUCED_REDUNDANCY", "STANDARD", "STANDARD_IA"],
+        v.replication.storage_class
+      )
+    ])
+    error_message = "replication.storage_class must be one of: DEEP_ARCHIVE, GLACIER, GLACIER_IR, INTELLIGENT_TIERING, ONEZONE_IA, REDUCED_REDUNDANCY, STANDARD or STANDARD_IA."
   }
 }
 
