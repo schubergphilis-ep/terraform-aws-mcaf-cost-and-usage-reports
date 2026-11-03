@@ -123,8 +123,8 @@ variable "report_definitions" {
     condition = alltrue([
       for k, v in var.report_definitions : v.replication == null ? true : alltrue([
         can(regex("^[0-9]{12}$", v.replication.destination_account_id)),
-        startswith(v.replication.destination_bucket_arn, "arn:aws:s3:::"),
-        startswith(v.replication.destination_kms_key_arn, "arn:aws:kms:"),
+        can(regex("^arn:aws[a-z-]*:s3:::", v.replication.destination_bucket_arn)),
+        can(regex("^arn:aws[a-z-]*:kms:", v.replication.destination_kms_key_arn)),
       ])
     ])
     error_message = "replication.destination_account_id must be a 12-digit AWS account ID, replication.destination_bucket_arn an S3 bucket ARN and replication.destination_kms_key_arn a KMS key ARN."
