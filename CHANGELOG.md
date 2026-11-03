@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.2](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/compare/v1.2.1...v1.2.2) (2026-10-19)
+
+
+### 🐛 Fixes
+
+* set BILLING_VIEW_ARN on CUR 2.0 exports ([#10](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/issues/10)) ([94914cd](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/commit/94914cdd412c7dba4989e1214cacc277c1e8d848))
+
 ## [1.2.1](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/compare/v1.2.0...v1.2.1) (2026-10-15)
 
 
