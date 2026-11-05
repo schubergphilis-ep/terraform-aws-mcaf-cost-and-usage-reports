@@ -6,7 +6,7 @@ variable "bucket_name" {
 
 variable "kms_key_arn" {
   type        = string
-  description = "The KMS key ARN used for the bucket encryption. When set and a report uses 'replication', the key must be in this account and you need kms:CreateGrant on it: the replication role gets a KMS grant to decrypt the objects."
+  description = "The KMS key ARN used for the bucket encryption. When a report uses 'replication', the replication role gets a KMS grant to decrypt the objects, so the key must be in the same account."
   default     = null
 }
 
@@ -48,6 +48,7 @@ variable "report_definitions" {
     overwrite                             = optional(string, "CREATE_NEW_REPORT")
     s3_prefix                             = optional(string, null)
     time_unit                             = string
+
     replication = optional(object({
       destination_account_id  = string
       destination_bucket_arn  = string
@@ -117,27 +118,6 @@ variable "report_definitions" {
       v.s3_prefix == null ? true : can(regex("^[^/].*[^/]$|^[^/]$", v.s3_prefix))
     ])
     error_message = "s3_prefix must not be empty and must not start or end with a '/'."
-  }
-
-  validation {
-    condition = alltrue([
-      for k, v in var.report_definitions : v.replication == null ? true : alltrue([
-        can(regex("^[0-9]{12}$", v.replication.destination_account_id)),
-        can(regex("^arn:aws[a-z-]*:s3:::", v.replication.destination_bucket_arn)),
-        can(regex("^arn:aws[a-z-]*:kms:", v.replication.destination_kms_key_arn)),
-      ])
-    ])
-    error_message = "replication.destination_account_id must be a 12-digit AWS account ID, replication.destination_bucket_arn an S3 bucket ARN and replication.destination_kms_key_arn a KMS key ARN."
-  }
-
-  validation {
-    condition = alltrue([
-      for k, v in var.report_definitions : try(v.replication.storage_class, null) == null ? true : contains(
-        ["DEEP_ARCHIVE", "GLACIER", "GLACIER_IR", "INTELLIGENT_TIERING", "ONEZONE_IA", "REDUCED_REDUNDANCY", "STANDARD", "STANDARD_IA"],
-        v.replication.storage_class
-      )
-    ])
-    error_message = "replication.storage_class must be one of: DEEP_ARCHIVE, GLACIER, GLACIER_IR, INTELLIGENT_TIERING, ONEZONE_IA, REDUCED_REDUNDANCY, STANDARD or STANDARD_IA."
   }
 }
 
