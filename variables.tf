@@ -115,9 +115,9 @@ variable "report_definitions" {
   validation {
     condition = alltrue([
       for k, v in var.report_definitions :
-      v.s3_prefix == null ? true : can(regex("^[^/].*[^/]$|^[^/]$", v.s3_prefix))
+      v.s3_prefix == null ? true : trim(v.s3_prefix, "/") == v.s3_prefix
     ])
-    error_message = "s3_prefix must not be empty and must not start or end with a '/'."
+    error_message = "s3_prefix must not start or end with a '/'."
   }
 }
 

@@ -1,11 +1,10 @@
 locals {
   cur_reports_bucket_name = var.bucket_name != null ? var.bucket_name : "aws-cur-reports-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.region}"
-  kms_key_arn             = coalesce(var.kms_key_arn, try(module.kms_key[0].arn, null))
+  kms_key_arn             = var.kms_key_arn != null ? var.kms_key_arn : module.kms_key[0].arn
 
   # Report/export files are written to `<s3_prefix>/<report name>/` in the bucket.
-  s3_prefixes = { for name, definition in var.report_definitions : name => coalesce(definition.s3_prefix, name) }
-
-  replicated_reports = { for name, definition in var.report_definitions : name => definition if definition.replication != null }
+  s3_prefixes  = { for name, definition in var.report_definitions : name => coalesce(definition.s3_prefix, name) }
+  replications = { for name, definition in var.report_definitions : name => definition.replication if definition.replication != null }
 
   compression_map = {
     GZIP    = "GZIP"
@@ -343,25 +342,20 @@ module "cur_reports_bucket" {
   policy      = data.aws_iam_policy_document.allow_access_to_curreports.json
   tags        = var.tags
 
-  # Replicates the files of each report with 'replication' set. mcaf-s3 uses the rule keys as rule priorities. The
-  # priority is derived from the report name, so adding or removing a report doesn't renumber the other rules. The role
-  # gets a KMS grant on the bucket key, the destination account manages access to its own bucket and key.
-  replication_configuration = length(local.replicated_reports) > 0 ? {
+  # mcaf-s3 uses the rule keys as priorities. Each report replicates its own prefix, so the rules never overlap and the
+  # priority order doesn't matter.
+  replication_configuration = length(local.replications) > 0 ? {
     create_iam_role = true
 
     rules = {
-      for name, definition in local.replicated_reports : tostring(parseint(substr(sha1(name), 0, 7), 16)) => {
-        id                 = name
-        dest_account_id    = definition.replication.destination_account_id
-        dest_bucket        = definition.replication.destination_bucket_arn
-        dest_storage_class = definition.replication.storage_class
-        filter             = { prefix = "${local.s3_prefixes[name]}/${name}/" }
-
-        replica_kms_key_arn = definition.replication.destination_kms_key_arn
-
-        source_selection_criteria = {
-          sse_kms_encrypted_objects = true
-        }
+      for i, name in keys(local.replications) : i => {
+        id                        = name
+        dest_account_id           = local.replications[name].destination_account_id
+        dest_bucket               = local.replications[name].destination_bucket_arn
+        dest_storage_class        = local.replications[name].storage_class
+        filter                    = { prefix = "${local.s3_prefixes[name]}/${name}/" }
+        replica_kms_key_arn       = local.replications[name].destination_kms_key_arn
+        source_selection_criteria = { sse_kms_encrypted_objects = true }
       }
     }
   } : null
