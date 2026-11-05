@@ -343,14 +343,14 @@ module "cur_reports_bucket" {
   policy      = data.aws_iam_policy_document.allow_access_to_curreports.json
   tags        = var.tags
 
-  # Replicates the files of each report with 'replication' set. Rule keys are the rule priorities, so the replicated
-  # reports are numbered in key order. The role gets a KMS grant on the bucket key, the destination account manages
-  # access to its own bucket and key.
+  # Replicates the files of each report with 'replication' set. mcaf-s3 uses the rule keys as rule priorities. The
+  # priority is derived from the report name, so adding or removing a report doesn't renumber the other rules. The role
+  # gets a KMS grant on the bucket key, the destination account manages access to its own bucket and key.
   replication_configuration = length(local.replicated_reports) > 0 ? {
     create_iam_role = true
 
     rules = {
-      for name, definition in local.replicated_reports : tostring(index(sort(keys(local.replicated_reports)), name)) => {
+      for name, definition in local.replicated_reports : tostring(parseint(substr(sha1(name), 0, 7), 16)) => {
         id                 = name
         dest_account_id    = definition.replication.destination_account_id
         dest_bucket        = definition.replication.destination_bucket_arn

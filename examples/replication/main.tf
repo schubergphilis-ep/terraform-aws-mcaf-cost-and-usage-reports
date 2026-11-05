@@ -28,7 +28,6 @@ module "cur" {
         destination_account_id  = "210987654321"
         destination_bucket_arn  = "arn:aws:s3:::datalake-ingestion-bucket"
         destination_kms_key_arn = "arn:aws:kms:eu-central-1:210987654321:key/00000000-0000-0000-0000-000000000000"
-        storage_class           = "STANDARD"
       }
     }
   }

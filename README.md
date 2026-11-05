@@ -16,7 +16,45 @@ Terraform module to setup and manage AWS Cost and Usage reports.
 
 Files are written to `<s3_prefix>/<key>/` in the bucket; `s3_prefix` defaults to the report key. Changing `s3_prefix` replaces an existing BCM Data Export; existing files are not moved.
 
-Set `replication` on a report to replicate its files, under the same prefix, to a bucket in another account. The destination bucket policy and KMS key policy must allow the role from the `replication_role_arn` output. See [examples/replication](examples/replication).
+Set `replication` on a report to replicate its files, under the same prefix, to a bucket in another account. See [examples/replication](examples/replication).
+
+Replication only applies to files written after it is enabled. To copy existing files, use S3 Batch Replication or a one-off copy.
+
+The destination account must:
+
+- enable versioning on the destination bucket
+- allow the role from the `replication_role_arn` output in the destination bucket policy:
+
+  ```json
+  {
+    "Effect": "Allow",
+    "Principal": { "AWS": "<replication_role_arn>" },
+    "Action": [
+      "s3:ObjectOwnerOverrideToBucketOwner",
+      "s3:ReplicateDelete",
+      "s3:ReplicateObject",
+      "s3:ReplicateTags"
+    ],
+    "Resource": "arn:aws:s3:::<destination-bucket>/<s3_prefix>/*"
+  },
+  {
+    "Effect": "Allow",
+    "Principal": { "AWS": "<replication_role_arn>" },
+    "Action": ["s3:GetBucketVersioning", "s3:PutBucketVersioning"],
+    "Resource": "arn:aws:s3:::<destination-bucket>"
+  }
+  ```
+
+- allow the role to use the destination KMS key in its key policy:
+
+  ```json
+  {
+    "Effect": "Allow",
+    "Principal": { "AWS": "<replication_role_arn>" },
+    "Action": ["kms:Encrypt", "kms:GenerateDataKey"],
+    "Resource": "*"
+  }
+  ```
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
@@ -59,7 +97,7 @@ Set `replication` on a report to replicate its files, under the same prefix, to 
 | <a name="input_kms_key_arn"></a> [kms\_key\_arn](#input\_kms\_key\_arn) | The KMS key ARN used for the bucket encryption. When a report uses 'replication', the replication role gets a KMS grant to decrypt the objects, so the key must be in the same account. | `string` | `null` | no |
 | <a name="input_kms_key_configuration"></a> [kms\_key\_configuration](#input\_kms\_key\_configuration) | Access configuration for the KMS key created by this module. Only applicable when 'kms\_key\_arn' is null. 'iam\_arns\_administrator' grants permissions to manage the key (no cryptographic use). 'name' sets the alias/name of the created key. | <pre>object({<br/>    iam_arns_administrator = list(string)<br/>    name                   = optional(string, "cost-and-usage-reports")<br/>  })</pre> | `null` | no |
 | <a name="input_legacy_reporting"></a> [legacy\_reporting](#input\_legacy\_reporting) | Enable legacy reporting | `bool` | `false` | no |
-| <a name="input_report_definitions"></a> [report\_definitions](#input\_report\_definitions) | AWS Cost and Usage reports definitions. Key is used as report/export name. Files are stored under `<s3_prefix>/<key>/` in the bucket, where 's3\_prefix' defaults to the key. Set 'replication' to replicate the files under that prefix to a bucket in another account. Supports both legacy CUR (aws\_cur\_report\_definition) and modern BCM Data Exports (aws\_bcmdataexports\_export). | <pre>map(object({<br/>    additional_artifacts                  = optional(list(string), null) # Only used when legacy_reporting is `true`.<br/>    compression                           = string<br/>    format                                = string<br/>    include_capacity_reservation_data     = optional(bool, false)<br/>    include_iam_principal_data            = optional(bool, false) # Only used when legacy_reporting is `false`.<br/>    include_manual_discount_compatibility = optional(bool, false)<br/>    include_resources                     = optional(bool, true)<br/>    include_split_cost_allocation_data    = optional(bool, false)<br/>    overwrite                             = optional(string, "CREATE_NEW_REPORT")<br/>    s3_prefix                             = optional(string, null)<br/>    time_unit                             = string<br/><br/>    replication = optional(object({<br/>      destination_account_id  = string<br/>      destination_bucket_arn  = string<br/>      destination_kms_key_arn = string<br/>      storage_class           = optional(string, null)<br/>    }), null)<br/>    }<br/>  ))</pre> | <pre>{<br/>  "daily-parquet": {<br/>    "additional_artifacts": [<br/>      "ATHENA"<br/>    ],<br/>    "compression": "PARQUET",<br/>    "format": "PARQUET",<br/>    "include_resources": true,<br/>    "overwrite": "OVERWRITE_REPORT",<br/>    "time_unit": "DAILY"<br/>  },<br/>  "hourly-gzip": {<br/>    "compression": "GZIP",<br/>    "format": "TEXT_OR_CSV",<br/>    "include_resources": true,<br/>    "overwrite": "CREATE_NEW_REPORT",<br/>    "time_unit": "HOURLY"<br/>  }<br/>}</pre> | no |
+| <a name="input_report_definitions"></a> [report\_definitions](#input\_report\_definitions) | AWS Cost and Usage reports definitions. Key is used as report/export name. Files are stored under '<s3\_prefix>/<key>/' in the bucket, where 's3\_prefix' defaults to the key. Set 'replication' to replicate the files under that prefix to a bucket in another account. Supports both legacy CUR (aws\_cur\_report\_definition) and modern BCM Data Exports (aws\_bcmdataexports\_export). | <pre>map(object({<br/>    additional_artifacts                  = optional(list(string), null) # Only used when legacy_reporting is `true`.<br/>    compression                           = string<br/>    format                                = string<br/>    include_capacity_reservation_data     = optional(bool, false)<br/>    include_iam_principal_data            = optional(bool, false) # Only used when legacy_reporting is `false`.<br/>    include_manual_discount_compatibility = optional(bool, false)<br/>    include_resources                     = optional(bool, true)<br/>    include_split_cost_allocation_data    = optional(bool, false)<br/>    overwrite                             = optional(string, "CREATE_NEW_REPORT")<br/>    s3_prefix                             = optional(string, null)<br/>    time_unit                             = string<br/><br/>    replication = optional(object({<br/>      destination_account_id  = string<br/>      destination_bucket_arn  = string<br/>      destination_kms_key_arn = string<br/>      storage_class           = optional(string, null)<br/>    }), null)<br/>    }<br/>  ))</pre> | <pre>{<br/>  "daily-parquet": {<br/>    "additional_artifacts": [<br/>      "ATHENA"<br/>    ],<br/>    "compression": "PARQUET",<br/>    "format": "PARQUET",<br/>    "include_resources": true,<br/>    "overwrite": "OVERWRITE_REPORT",<br/>    "time_unit": "DAILY"<br/>  },<br/>  "hourly-gzip": {<br/>    "compression": "GZIP",<br/>    "format": "TEXT_OR_CSV",<br/>    "include_resources": true,<br/>    "overwrite": "CREATE_NEW_REPORT",<br/>    "time_unit": "HOURLY"<br/>  }<br/>}</pre> | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Map of tags | `map(string)` | `{}` | no |
 
 ## Outputs

@@ -74,7 +74,7 @@ variable "report_definitions" {
       time_unit            = "DAILY"
     }
   }
-  description = "AWS Cost and Usage reports definitions. Key is used as report/export name. Files are stored under `<s3_prefix>/<key>/` in the bucket, where 's3_prefix' defaults to the key. Set 'replication' to replicate the files under that prefix to a bucket in another account. Supports both legacy CUR (aws_cur_report_definition) and modern BCM Data Exports (aws_bcmdataexports_export)."
+  description = "AWS Cost and Usage reports definitions. Key is used as report/export name. Files are stored under '<s3_prefix>/<key>/' in the bucket, where 's3_prefix' defaults to the key. Set 'replication' to replicate the files under that prefix to a bucket in another account. Supports both legacy CUR (aws_cur_report_definition) and modern BCM Data Exports (aws_bcmdataexports_export)."
 
   validation {
     condition = alltrue([
