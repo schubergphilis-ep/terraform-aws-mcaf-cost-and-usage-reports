@@ -6,7 +6,7 @@ variable "bucket_name" {
 
 variable "kms_key_arn" {
   type        = string
-  description = "The KMS key ARN used for the bucket encryption. When set and a report uses 'replication', the key policy must allow the replication role (see the 'replication_role_arn' output) to use kms:Decrypt."
+  description = "The KMS key ARN used for the bucket encryption. When set and a report uses 'replication', the key must be in this account and you need kms:CreateGrant on it: the replication role gets a KMS grant to decrypt the objects."
   default     = null
 }
 

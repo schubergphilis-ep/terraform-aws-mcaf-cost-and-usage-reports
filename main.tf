@@ -336,12 +336,35 @@ data "aws_iam_policy_document" "allow_access_to_curreports" {
 
 module "cur_reports_bucket" {
   source  = "schubergphilis-ep/mcaf-s3/aws"
-  version = "~> 2.0.0"
+  version = "~> 4.1.0"
 
   name        = local.cur_reports_bucket_name
   kms_key_arn = local.kms_key_arn
   policy      = data.aws_iam_policy_document.allow_access_to_curreports.json
   tags        = var.tags
+
+  # Replicates the files of each report with 'replication' set. Rule keys are the rule priorities, so the replicated
+  # reports are numbered in key order. The role gets a KMS grant on the bucket key, the destination account manages
+  # access to its own bucket and key.
+  replication_configuration = length(local.replicated_reports) > 0 ? {
+    create_iam_role = true
+
+    rules = {
+      for name, definition in local.replicated_reports : tostring(index(sort(keys(local.replicated_reports)), name)) => {
+        id                 = name
+        dest_account_id    = definition.replication.destination_account_id
+        dest_bucket        = definition.replication.destination_bucket_arn
+        dest_storage_class = definition.replication.storage_class
+        filter             = { prefix = "${local.s3_prefixes[name]}/${name}/" }
+
+        replica_kms_key_arn = definition.replication.destination_kms_key_arn
+
+        source_selection_criteria = {
+          sse_kms_encrypted_objects = true
+        }
+      }
+    }
+  } : null
 
   lifecycle_rule = [
     {
@@ -443,160 +466,4 @@ resource "aws_bcmdataexports_export" "default" {
   }
 
   tags = var.tags
-}
-
-################################################################################
-# Cross-account replication
-################################################################################
-
-data "aws_iam_policy_document" "replication_assume_role" {
-  count = length(local.replicated_reports) > 0 ? 1 : 0
-
-  statement {
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["s3.amazonaws.com"]
-    }
-  }
-}
-
-data "aws_iam_policy_document" "replication" {
-  count = length(local.replicated_reports) > 0 ? 1 : 0
-
-  statement {
-    sid = "SourceBucket"
-
-    actions = [
-      "s3:GetReplicationConfiguration",
-      "s3:ListBucket",
-    ]
-
-    resources = [module.cur_reports_bucket.arn]
-  }
-
-  statement {
-    sid = "SourceObjects"
-
-    actions = [
-      "s3:GetObjectVersionAcl",
-      "s3:GetObjectVersionForReplication",
-      "s3:GetObjectVersionTagging",
-    ]
-
-    resources = ["${module.cur_reports_bucket.arn}/*"]
-  }
-
-  statement {
-    sid = "DestinationObjects"
-
-    actions = [
-      "s3:ObjectOwnerOverrideToBucketOwner",
-      "s3:ReplicateDelete",
-      "s3:ReplicateObject",
-      "s3:ReplicateTags",
-    ]
-
-    resources = distinct([for definition in local.replicated_reports : "${definition.replication.destination_bucket_arn}/*"])
-  }
-
-  statement {
-    sid       = "SourceKey"
-    actions   = ["kms:Decrypt"]
-    resources = [local.kms_key_arn]
-
-    condition {
-      test     = "StringEquals"
-      variable = "kms:ViaService"
-      values   = ["s3.${data.aws_region.current.region}.amazonaws.com"]
-    }
-  }
-
-  statement {
-    sid = "DestinationKeys"
-
-    actions = [
-      "kms:Encrypt",
-      "kms:GenerateDataKey",
-    ]
-
-    resources = distinct([for definition in local.replicated_reports : definition.replication.destination_kms_key_arn])
-  }
-}
-
-resource "aws_iam_role" "replication" {
-  count = length(local.replicated_reports) > 0 ? 1 : 0
-
-  name               = "${local.cur_reports_bucket_name}-replication"
-  assume_role_policy = data.aws_iam_policy_document.replication_assume_role[0].json
-  tags               = var.tags
-}
-
-resource "aws_iam_role_policy" "replication" {
-  count = length(local.replicated_reports) > 0 ? 1 : 0
-
-  name   = "replication"
-  role   = aws_iam_role.replication[0].id
-  policy = data.aws_iam_policy_document.replication[0].json
-}
-
-# The key created by this module only trusts the account root in its key policy, which is not enough for the
-# replication role to decrypt the source objects. A grant avoids a dependency cycle between the role and the key
-# policy. When 'kms_key_arn' is provided, the caller is responsible for allowing the role in the key policy.
-resource "aws_kms_grant" "replication" {
-  count = length(local.replicated_reports) > 0 && var.kms_key_arn == null ? 1 : 0
-
-  name              = "${local.cur_reports_bucket_name}-replication"
-  key_id            = module.kms_key[0].arn
-  grantee_principal = aws_iam_role.replication[0].arn
-  operations        = ["Decrypt"]
-}
-
-resource "aws_s3_bucket_replication_configuration" "default" {
-  count = length(local.replicated_reports) > 0 ? 1 : 0
-
-  bucket = module.cur_reports_bucket.name
-  role   = aws_iam_role.replication[0].arn
-
-  dynamic "rule" {
-    for_each = local.replicated_reports
-
-    content {
-      id       = rule.key
-      priority = index(sort(keys(local.replicated_reports)), rule.key)
-      status   = "Enabled"
-
-      filter {
-        prefix = "${local.s3_prefixes[rule.key]}/${rule.key}/"
-      }
-
-      delete_marker_replication {
-        status = "Disabled"
-      }
-
-      source_selection_criteria {
-        sse_kms_encrypted_objects {
-          status = "Enabled"
-        }
-      }
-
-      destination {
-        account       = rule.value.replication.destination_account_id
-        bucket        = rule.value.replication.destination_bucket_arn
-        storage_class = rule.value.replication.storage_class
-
-        access_control_translation {
-          owner = "Destination"
-        }
-
-        encryption_configuration {
-          replica_kms_key_id = rule.value.replication.destination_kms_key_arn
-        }
-      }
-    }
-  }
-
-  # Versioning must be enabled on the bucket before replication can be configured.
-  depends_on = [module.cur_reports_bucket]
 }

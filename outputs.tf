@@ -14,6 +14,6 @@ output "kms_key_arn" {
 }
 
 output "replication_role_arn" {
-  value       = try(aws_iam_role.replication[0].arn, null)
+  value       = module.cur_reports_bucket.replication_role_arn
   description = "ARN of the IAM role used for S3 replication, null when no report has 'replication' configured"
 }
