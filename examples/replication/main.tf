@@ -25,9 +25,9 @@ module "cur" {
       # Replicates `aws_cur/cur2-daily-parquet/` to the same prefix in the destination bucket. The destination bucket
       # policy and key policy must allow the role exposed in the `replication_role_arn` output.
       replication = {
-        destination_account_id  = "210987654321"
-        destination_bucket_arn  = "arn:aws:s3:::datalake-ingestion-bucket"
-        destination_kms_key_arn = "arn:aws:kms:eu-central-1:210987654321:key/00000000-0000-0000-0000-000000000000"
+        dest_account_id  = "210987654321"
+        dest_bucket_arn  = "arn:aws:s3:::datalake-ingestion-bucket"
+        dest_kms_key_arn = "arn:aws:kms:eu-central-1:210987654321:key/00000000-0000-0000-0000-000000000000"
       }
     }
   }

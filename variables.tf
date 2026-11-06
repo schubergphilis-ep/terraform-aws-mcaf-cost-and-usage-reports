@@ -50,10 +50,10 @@ variable "report_definitions" {
     time_unit                             = string
 
     replication = optional(object({
-      destination_account_id  = string
-      destination_bucket_arn  = string
-      destination_kms_key_arn = string
-      storage_class           = optional(string, null)
+      dest_account_id    = string
+      dest_bucket_arn    = string
+      dest_kms_key_arn   = string
+      dest_storage_class = optional(string, null)
     }), null)
     }
   ))

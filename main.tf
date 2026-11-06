@@ -350,11 +350,11 @@ module "cur_reports_bucket" {
     rules = {
       for i, name in keys(local.replications) : i => {
         id                        = name
-        dest_account_id           = local.replications[name].destination_account_id
-        dest_bucket               = local.replications[name].destination_bucket_arn
-        dest_storage_class        = local.replications[name].storage_class
+        dest_account_id           = local.replications[name].dest_account_id
+        dest_bucket               = local.replications[name].dest_bucket_arn
+        dest_storage_class        = local.replications[name].dest_storage_class
         filter                    = { prefix = "${local.s3_prefixes[name]}/${name}/" }
-        replica_kms_key_arn       = local.replications[name].destination_kms_key_arn
+        replica_kms_key_arn       = local.replications[name].dest_kms_key_arn
         source_selection_criteria = { sse_kms_encrypted_objects = true }
       }
     }
