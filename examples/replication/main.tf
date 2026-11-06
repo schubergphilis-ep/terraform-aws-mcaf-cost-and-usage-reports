@@ -19,7 +19,7 @@ module "cur" {
       compression = "PARQUET"
       format      = "PARQUET"
       overwrite   = "OVERWRITE_REPORT"
-      s3_prefix   = "aws_cur" # Files are written to `aws_cur/cur2-daily-parquet/`.
+      s3_prefix   = "aws_cur" # Files are written to `aws_cur/cur2-daily-parquet/`, or to `cur2-daily-parquet/` with "".
       time_unit   = "DAILY"
 
       # Replicates `aws_cur/cur2-daily-parquet/` to the same prefix in the destination bucket. The destination bucket

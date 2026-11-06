@@ -2,8 +2,9 @@ locals {
   cur_reports_bucket_name = var.bucket_name != null ? var.bucket_name : "aws-cur-reports-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.region}"
   kms_key_arn             = var.kms_key_arn != null ? var.kms_key_arn : module.kms_key[0].arn
 
-  # Report/export files are written to `<s3_prefix>/<report name>/` in the bucket.
-  s3_prefixes  = { for name, definition in var.report_definitions : name => coalesce(definition.s3_prefix, name) }
+  # Report/export files are written to `<s3_prefix>/<report name>/` in the bucket, or to `<report name>/` when s3_prefix
+  # is an empty string. Only null falls back to the report name.
+  s3_prefixes  = { for name, definition in var.report_definitions : name => definition.s3_prefix != null ? definition.s3_prefix : name }
   replications = { for name, definition in var.report_definitions : name => definition.replication if definition.replication != null }
 
   compression_map = {
@@ -353,7 +354,7 @@ module "cur_reports_bucket" {
         dest_account_id           = local.replications[name].dest_account_id
         dest_bucket               = local.replications[name].dest_bucket_arn
         dest_storage_class        = local.replications[name].dest_storage_class
-        filter                    = { prefix = "${local.s3_prefixes[name]}/${name}/" }
+        filter                    = { prefix = "${join("/", compact([local.s3_prefixes[name], name]))}/" }
         replica_kms_key_arn       = local.replications[name].dest_kms_key_arn
         source_selection_criteria = { sse_kms_encrypted_objects = true }
       }

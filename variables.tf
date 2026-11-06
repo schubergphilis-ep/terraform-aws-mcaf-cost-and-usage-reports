@@ -74,7 +74,7 @@ variable "report_definitions" {
       time_unit            = "DAILY"
     }
   }
-  description = "AWS Cost and Usage reports definitions. Key is used as report/export name. Files are stored under '<s3_prefix>/<key>/' in the bucket, where 's3_prefix' defaults to the key. Set 'replication' to replicate the files under that prefix to a bucket in another account. Supports both legacy CUR (aws_cur_report_definition) and modern BCM Data Exports (aws_bcmdataexports_export)."
+  description = "AWS Cost and Usage reports definitions. Key is used as report/export name. Files are stored under '<s3_prefix>/<key>/' in the bucket, where 's3_prefix' defaults to the key; set it to an empty string to store them under '<key>/'. Set 'replication' to replicate the files under that prefix to a bucket in another account. Supports both legacy CUR (aws_cur_report_definition) and modern BCM Data Exports (aws_bcmdataexports_export)."
 
   validation {
     condition = alltrue([
@@ -118,6 +118,13 @@ variable "report_definitions" {
       v.s3_prefix == null ? true : trim(v.s3_prefix, "/") == v.s3_prefix
     ])
     error_message = "s3_prefix must not start or end with a '/'."
+  }
+
+  validation {
+    condition = !var.legacy_reporting || alltrue([
+      for k, v in var.report_definitions : v.s3_prefix != "" || !try(contains(v.additional_artifacts, "ATHENA"), false)
+    ])
+    error_message = "s3_prefix must not be empty for a legacy report with the ATHENA additional artifact."
   }
 }
 
