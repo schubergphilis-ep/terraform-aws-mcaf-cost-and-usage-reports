@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/compare/v1.2.2...v1.3.0) (2026-11-06)
+
+
+### 🚀 Features
+
+* add per-report S3 prefix and cross-account replication ([#12](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/issues/12)) ([6a216fb](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/commit/6a216fb16fd9241c3cb51a277f0110587fdb0620))
+
 ## [1.2.2](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/compare/v1.2.1...v1.2.2) (2026-10-19)
 
 
