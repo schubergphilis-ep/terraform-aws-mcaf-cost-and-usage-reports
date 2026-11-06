@@ -1,5 +1,10 @@
 locals {
   cur_reports_bucket_name = var.bucket_name != null ? var.bucket_name : "aws-cur-reports-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.region}"
+  kms_key_arn             = var.kms_key_arn != null ? var.kms_key_arn : module.kms_key[0].arn
+
+  # Report/export files are written to `<s3_prefix>/<report name>/` in the bucket.
+  s3_prefixes  = { for name, definition in var.report_definitions : name => coalesce(definition.s3_prefix, name) }
+  replications = { for name, definition in var.report_definitions : name => definition.replication if definition.replication != null }
 
   compression_map = {
     GZIP    = "GZIP"
@@ -330,12 +335,30 @@ data "aws_iam_policy_document" "allow_access_to_curreports" {
 
 module "cur_reports_bucket" {
   source  = "schubergphilis-ep/mcaf-s3/aws"
-  version = "~> 2.0.0"
+  version = "~> 4.1.0"
 
   name        = local.cur_reports_bucket_name
-  kms_key_arn = var.kms_key_arn != null ? var.kms_key_arn : module.kms_key[0].arn
+  kms_key_arn = local.kms_key_arn
   policy      = data.aws_iam_policy_document.allow_access_to_curreports.json
   tags        = var.tags
+
+  # mcaf-s3 uses the rule keys as priorities. Each report replicates its own prefix, so the rules never overlap and the
+  # priority order doesn't matter.
+  replication_configuration = length(local.replications) > 0 ? {
+    create_iam_role = true
+
+    rules = {
+      for i, name in keys(local.replications) : i => {
+        id                        = name
+        dest_account_id           = local.replications[name].dest_account_id
+        dest_bucket               = local.replications[name].dest_bucket_arn
+        dest_storage_class        = local.replications[name].dest_storage_class
+        filter                    = { prefix = "${local.s3_prefixes[name]}/${name}/" }
+        replica_kms_key_arn       = local.replications[name].dest_kms_key_arn
+        source_selection_criteria = { sse_kms_encrypted_objects = true }
+      }
+    }
+  } : null
 
   lifecycle_rule = [
     {
@@ -376,7 +399,7 @@ resource "aws_cur_report_definition" "default" {
   report_name            = each.key
   report_versioning      = each.value.overwrite
   s3_bucket              = module.cur_reports_bucket.name
-  s3_prefix              = each.key
+  s3_prefix              = local.s3_prefixes[each.key]
   s3_region              = data.aws_region.current.region
   time_unit              = each.value.time_unit
   tags                   = var.tags
@@ -419,7 +442,7 @@ resource "aws_bcmdataexports_export" "default" {
     destination_configurations {
       s3_destination {
         s3_bucket = module.cur_reports_bucket.name
-        s3_prefix = each.key
+        s3_prefix = local.s3_prefixes[each.key]
         s3_region = data.aws_region.current.region
 
         s3_output_configurations {
