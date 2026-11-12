@@ -22,12 +22,20 @@ module "cur" {
       s3_prefix   = "aws_cur" # Files are written to `aws_cur/cur2-daily-parquet/`.
       time_unit   = "DAILY"
 
-      # Replicates `aws_cur/cur2-daily-parquet/` to the same prefix in the destination bucket. The destination bucket
-      # policy and key policy must allow the role exposed in the `replication_role_arn` output.
-      replication = {
-        dest_account_id  = "210987654321"
-        dest_bucket_arn  = "arn:aws:s3:::datalake-ingestion-bucket"
-        dest_kms_key_arn = "arn:aws:kms:eu-central-1:210987654321:key/00000000-0000-0000-0000-000000000000"
+      # Replicates `aws_cur/cur2-daily-parquet/` to the same prefix in each destination bucket. The destination bucket
+      # policies and key policies must allow the role exposed in the `replication_role_arn` output.
+      replications = {
+        datalake-nonprod = {
+          dest_account_id  = "210987654321"
+          dest_bucket_arn  = "arn:aws:s3:::datalake-nonprod-ingestion-bucket"
+          dest_kms_key_arn = "arn:aws:kms:eu-central-1:210987654321:key/00000000-0000-0000-0000-000000000000"
+        }
+
+        datalake-prod = {
+          dest_account_id  = "109876543210"
+          dest_bucket_arn  = "arn:aws:s3:::datalake-prod-ingestion-bucket"
+          dest_kms_key_arn = "arn:aws:kms:eu-central-1:109876543210:key/11111111-1111-1111-1111-111111111111"
+        }
       }
     }
   }

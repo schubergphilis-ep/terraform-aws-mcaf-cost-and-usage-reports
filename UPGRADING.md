@@ -2,6 +2,39 @@
 
 This document captures required refactoring on your part when upgrading to a module version that contains breaking changes.
 
+## Upgrading to v2.0.0
+
+### Key Changes
+
+- A report can now replicate to more than one destination bucket.
+
+#### Variables
+
+The following variables have been modified:
+
+- `report_definitions`:
+  - `replication` (object) has been replaced by `replications` (map of objects). The map key names the destination and is used in the replication rule ID `<report key>-<destination name>`. Move an existing `replication` block into the map:
+
+    ```hcl
+    # Before
+    replication = {
+      dest_account_id  = "210987654321"
+      dest_bucket_arn  = "arn:aws:s3:::datalake-ingestion-bucket"
+      dest_kms_key_arn = "arn:aws:kms:eu-central-1:210987654321:key/00000000-0000-0000-0000-000000000000"
+    }
+
+    # After
+    replications = {
+      datalake = {
+        dest_account_id  = "210987654321"
+        dest_bucket_arn  = "arn:aws:s3:::datalake-ingestion-bucket"
+        dest_kms_key_arn = "arn:aws:kms:eu-central-1:210987654321:key/00000000-0000-0000-0000-000000000000"
+      }
+    }
+    ```
+
+    The replication rule ID changes from `<report key>` to `<report key>-<destination name>`, which updates the bucket replication configuration in place. The replication role and its permissions are kept.
+
 ## Upgrading to v1.0.0
 
 ### Key Changes
