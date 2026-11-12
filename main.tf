@@ -3,8 +3,12 @@ locals {
   kms_key_arn             = var.kms_key_arn != null ? var.kms_key_arn : module.kms_key[0].arn
 
   # Report/export files are written to `<s3_prefix>/<report name>/` in the bucket.
-  s3_prefixes  = { for name, definition in var.report_definitions : name => coalesce(definition.s3_prefix, name) }
-  replications = { for name, definition in var.report_definitions : name => definition.replication if definition.replication != null }
+  s3_prefixes = { for name, definition in var.report_definitions : name => coalesce(definition.s3_prefix, name) }
+  replications = flatten([
+    for name, definition in var.report_definitions : [
+      for destination, replication in definition.replications : merge(replication, { id = "${name}-${destination}", report = name })
+    ]
+  ])
 
   compression_map = {
     GZIP    = "GZIP"
@@ -342,19 +346,20 @@ module "cur_reports_bucket" {
   policy      = data.aws_iam_policy_document.allow_access_to_curreports.json
   tags        = var.tags
 
-  # mcaf-s3 uses the rule keys as priorities. Each report replicates its own prefix, so the rules never overlap and the
-  # priority order doesn't matter.
+  # mcaf-s3 uses the rule keys as priorities. Rules of the same report share a prefix but replicate to different
+  # buckets, and S3 replicates objects matching overlapping rules to every destination, so the priority order doesn't
+  # matter.
   replication_configuration = length(local.replications) > 0 ? {
     create_iam_role = true
 
     rules = {
-      for i, name in keys(local.replications) : i => {
-        id                        = name
-        dest_account_id           = local.replications[name].dest_account_id
-        dest_bucket               = local.replications[name].dest_bucket_arn
-        dest_storage_class        = local.replications[name].dest_storage_class
-        filter                    = { prefix = "${local.s3_prefixes[name]}/${name}/" }
-        replica_kms_key_arn       = local.replications[name].dest_kms_key_arn
+      for i, replication in local.replications : i => {
+        id                        = replication.id
+        dest_account_id           = replication.dest_account_id
+        dest_bucket               = replication.dest_bucket_arn
+        dest_storage_class        = replication.dest_storage_class
+        filter                    = { prefix = "${local.s3_prefixes[replication.report]}/${replication.report}/" }
+        replica_kms_key_arn       = replication.dest_kms_key_arn
         source_selection_criteria = { sse_kms_encrypted_objects = true }
       }
     }
