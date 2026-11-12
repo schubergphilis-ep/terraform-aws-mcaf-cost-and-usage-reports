@@ -49,7 +49,6 @@ variable "report_definitions" {
     s3_prefix                             = optional(string, null)
     time_unit                             = string
 
-    # Key is the destination name, used in the replication rule ID `<report key>-<destination name>`.
     replications = optional(map(object({
       dest_account_id    = string
       dest_bucket_arn    = string
