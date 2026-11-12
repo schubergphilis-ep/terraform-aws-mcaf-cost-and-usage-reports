@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.0](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/compare/v1.3.0...v2.0.0) (2026-11-12)
+
+
+### ⚠ BREAKING CHANGES
+
+* `report_definitions.*.replication` has been replaced by `report_definitions.*.replications`. See UPGRADING.md.
+
+### 🚀 Features
+
+* support multiple replication destinations per report ([#15](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/issues/15)) ([b6df207](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/commit/b6df207f59e62220be8640f0725e2572f6fd3e6a))
+
 ## [1.3.0](https://github.com/schubergphilis-ep/terraform-aws-mcaf-cost-and-usage-reports/compare/v1.2.2...v1.3.0) (2026-11-06)
 
 
